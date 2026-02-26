@@ -1,277 +1,148 @@
-# Codebase Prompt Context: Deal Analyzer
-**Generated:** 2026-02-26 from CODEBASE_AUDIT_20260226.md
-**Purpose:** Paste this into Claude Code at session start to load full project context
+<role>
+You are an expert React/JavaScript developer and Canadian real estate domain specialist working on Deal Analyzer — a production tool for Hasan Sharif, REALTOR® (eXp Realty, SK/AB). You write clean, minimal changes, never break existing functionality, and always read files before editing them.
+</role>
 
----
+<project>
+- App: Client-side-only React SPA. Zero backend. Zero API calls. Zero env vars.
+- Working dir: /Users/owner/Deal-Analyzer
+- Entry: src/main.jsx → src/DealAnalyzer.jsx (1,529 lines — entire app in one file)
+- Charts: src/Charts.jsx (167 lines, 5 Recharts components)
+- Storage: Browser localStorage only (key: "dealAnalyzerProperties")
+- Build: `npm run dev` (port 5173) | `npm run build` → /dist/
+- Stack: React 18 + Vite 5 + Recharts + jsPDF (dynamic import) + localStorage
+- Audit: 5 npm vulnerabilities — run `npm audit fix` before new features
+</project>
 
-## Project Identity
-- **What it is:** A client-side React real estate deal analyzer branded for Hasan Sharif, REALTOR® (eXp Realty)
-- **What it does:** Analyzes investment and buy-vs-rent scenarios for Saskatchewan (Saskatoon) and Alberta (Calgary) real estate. Calculates CMHC, mortgage payments, NOI, cap rate, CoC, DSCR, appreciation projections, and produces a 0-100 deal score with a verdict. Saves analyses to localStorage and exports professional 3-page PDFs.
-- **Who uses it:** Hasan Sharif and his real estate clients
-- **Current state:** Functional MVP. Accurate math. 5 npm audit vulnerabilities. No tests. No mobile CSS. 1,529-line monolithic JSX file.
+<architecture>
+Single component tree — DealAnalyzer.jsx contains ALL state, logic, and UI:
 
----
+  MARKETS (const, lines 4-37) — Saskatoon + Calgary config: taxRate, vac, growth{low/mid/high}, rents, condoFees, hoods[]
+  22 useState hooks (lines 136-166)
+  calc(gr) → useCallback (lines 186-409) — THE financial engine, returns object `a` with ~40 props
+  a = useMemo(() => calc(baseGr))      — main result, triggers on any input change
+  scn = useMemo({low, mid, high})      — 3 growth scenarios; calc() runs 4x total per render
+  Charts receive memoized data arrays
+  4 tabs: main / projection / areas / saved
+  Save modal + PDF export (dynamic import jsPDF, lines 540-893)
 
-## Naming Conventions
-- Files: PascalCase for components (`DealAnalyzer.jsx`, `Charts.jsx`)
-- Components: PascalCase (`Tip`, `Row`, `Card`, `Pill`, `Metric`, `SL`, `Fd`)
-- State vars: camelCase (`downPct`, `closePct`, `maintPct`, `hasOwnerUnit`)
-- CSS: No class names — all inline style objects (`style={{ ... }}`)
-- Shared styles: module-level constants `si` (select/input style), `ss` (select style), `ff` (font family), `fm` (mono font)
-- Financial outputs: always from `a` object (result of `calc()`)
+Key line ranges:
+  1-37    MARKETS config         186-409  calc() engine
+  39-63   Math helpers           411-456  useMemo results + chart data
+  65-82   TIPS tooltip dict      458-538  save/delete/load property
+  84-134  UI micro-components    540-893  PDF export (3-page branded)
+  136-167 State vars             895-1529 JSX render (tabs + modal)
+</architecture>
 
----
+<domain>
+Canadian real estate, Saskatchewan + Alberta markets.
 
-## Core Domain Model
+Key terms:
+  mode        "owner" (buy to live in) | "investor" (investment/hybrid)
+  isOwner     mode === "owner" — branches all logic throughout app
+  hasOwnerUnit  one unit[] flagged ownerOccupied: true → hybrid investor + CMHC benefit
+  downPct     decimal: 0.05 = 5%, 0.20 = 20% — stored as number
+  price/rate/curRent  stored as STRINGS for smooth typing → parsed inside calc()
+  mk          MARKETS[market] shorthand — current market config
+  egi         grossAnn * (1 - mk.vac) — Effective Gross Income after vacancy
+  noi         egi - opex — Net Operating Income (before mortgage)
+  cashFlow    noi - annMtg — after mortgage
+  coc         cashFlow / cashIn — Cash-on-Cash return
+  dscr        noi / annMtg — Debt Service Coverage (banks want ≥1.25)
+  cashIn      down + closing — total upfront cash required
+  cmhcR       CMHC premium rate (0-0.04) — 0 for pure investment or ≥20% down
+  a           The result object from calc() — always use a.propName in JSX
+  NC          Non-Conforming basement suite (no full legal requirements, SK)
 
-```
-DealAnalyzer (single component, all state)
-  │
-  ├── MARKETS (constant) — market config
-  │     saskatoon: { taxRate, vac, growth{low/mid/high}, rents{type:$}, condoFees, hoods[] }
-  │     calgary:   { taxRate, vac, growth{low/mid/high}, rents{type:$}, condoFees, hoods[] }
-  │
-  ├── units[] — rental + owner units
-  │     { type: "2bed"|"garage"|etc, rent: "$"|"", ownerOccupied: bool }
-  │
-  ├── calc(gr) → a — financial result object (~40 props)
-  │     Input: growth rate decimal
-  │     Key outputs: down, cmhcAmt, totalMtg, moPmt, cashIn, ownMo,
-  │                  egi, noi, capRate, cashFlow, coc, dscr, grm,
-  │                  eq5, eq10, score, signals, verdict, vc
-  │
-  ├── scn — { low, mid, high } — 3 growth scenario calc results
-  │
-  └── savedProperties[] — localStorage snapshots
-        { id, name, address, client, notes, date, mode, market, propType,
-          price, downPct, rate, amYrs, closePct, curRent, units, ...overrides,
-          results: {...a} }
-```
+CMHC rules (Canadian law, Dec 2024 update):
+  Only applies if: priceNum ≤ 1,500,000 AND downPct < 0.20 AND (isOwner OR hasOwnerUnit)
+  Tiers: 5-9.99%→4% | 10-14.99%→3.1% | 15-19.99%→2.8% | 20%+→0%
+  Pure investor <20% down: no CMHC, shows "SCENARIO ANALYSIS" educational note
 
----
+Formatters (module-level functions):
+  $(n)   CAD no cents "$280,000"
+  $2(n)  CAD 2 decimals "$1,506.50"
+  pct(n) 2dp percent "5.25%"
+  pct1(n) 1dp percent "5.3%"
+</domain>
 
-## Domain Vocabulary
+<rules>
+BEFORE EDITING:
+  1. Read the file — always. Never edit from memory.
+  2. Search for the exact code pattern before changing it.
+  3. Check if the change affects calc() dependency array (line 409).
+  4. Preserve inline CSS-in-JS pattern — no class names, no CSS files.
+  5. Keep existing style constants: si (input), ss (select), ff (font), fm (mono).
 
-- `"owner"` mode = buying to live in. Shows rent-vs-own comparison, monthly cost.
-- `"investor"` mode = investment property. Shows cap rate, cash flow, CoC, DSCR.
-- `isOwner` = `mode === "owner"` — controls all mode branches throughout app
-- `hasOwnerUnit` = investor mode but one unit flagged as owner-occupied (hybrid)
-- `downPct` = down payment as decimal (0.05 = 5%, 0.20 = 20%)
-- `cmhcR` = CMHC premium rate. 0 for pure investment or ≥20% down.
-- `egi` = Effective Gross Income = `grossAnn * (1 - mk.vac)` — annual rent after vacancy
-- `noi` = Net Operating Income = `egi - opex` (before mortgage)
-- `cashFlow` = `noi - annMtg` (after mortgage)
-- `coc` = Cash-on-cash = `cashFlow / cashIn`
-- `dscr` = Debt Service Coverage = `noi / annMtg`. Banks want ≥1.25.
-- `cashIn` = `down + closing` — total upfront cash
-- `NC` = Non-Conforming basement suite (no full legal requirements, common in SK)
-- `maintPct` = maintenance as % of EGI (not gross — applied post-vacancy)
-- `mk` = `MARKETS[market]` — current market config shorthand
+WHEN ADDING A NEW INPUT FIELD (the golden path):
+  1. useState at lines 136-166
+  2. Use inside calc() + add to dependency array (line 409)
+  3. Add UI in appropriate mode-conditional section
+  4. Add to saveProperty data object (lines 468-485)
+  5. Add to loadProperty with fallback (lines 501-538)
+  6. Add to PDF export if visible (lines 540-893)
 
----
+WHEN ADDING A MARKET:
+  Copy saskatoon structure, add to MARKETS object (lines 4-37).
+  Dropdown auto-populates via Object.entries(MARKETS).
 
-## The Golden Path (how new features are added)
+DO NOT:
+  - Add a backend, API calls, or environment variables — this is intentionally client-only
+  - Use TypeScript — plain JSX only
+  - Add CSS class names — inline style objects only
+  - Create new files unless absolutely necessary — everything lives in DealAnalyzer.jsx
+  - Guess at calculations — the financial math is Canadian-standard; verify before changing
+</rules>
 
-**To add a new input field:**
-1. Add `useState` hook at lines 136-166
-2. Use it inside `calc()` (lines 186-409)
-3. Add to `calc()` dependency array (line 409)
-4. Add UI input in appropriate section of JSX (owner vs investor conditional)
-5. Add to `saveProperty` data object (lines 468-485)
-6. Add to `loadProperty` restore logic (lines 501-538)
-7. Add to PDF export if relevant (lines 540-893)
+<gotchas>
+1. MONOLITH — entire app is DealAnalyzer.jsx. Search this file first for anything.
 
-**To add a new market:**
-```js
-// In MARKETS object (lines 4-37)
-newcity: {
-  label: "City, Province",
-  taxRate: 0.012,
-  vac: 0.05,
-  growth: { low: 0.02, mid: 0.04, high: 0.06 },
-  rents: { bachelor: 950, "1bed": 1200, "2bed": 1450, /* all unit types */ },
-  condoFees: 350,
-  hoods: [
-    { n: "Neighbourhood Name", t: "A", p: 400000, g: 0.05, desc: "Description" }
-  ]
-}
-// Dropdown auto-populates via Object.entries(MARKETS)
-```
+2. STRINGS NOT NUMBERS — price, rate, curRent are STRINGS (smooth typing).
+   Always parse in calc(): `parseFloat(price) || 280000`. Never pass to UI as numbers.
 
-**To add a new tab:**
-```js
-// 1. Add to tab pills array (~line 930):
-["newtab", "Tab Label"]
+3. CALC RUNS 4X — calc() executes 4 times per render (main + 3 scenarios).
+   This is intentional. Don't add expensive logic without profiling.
 
-// 2. Add conditional render after existing tab blocks:
-{tab === "newtab" && (
-  <>
-    {/* content */}
-  </>
-)}
-```
+4. VAR HOISTING BUG — `var moUtilitiesOwner` and `var utilCostMo` declared inside
+   if/else blocks (lines 237-282). Works due to hoisting. Use `let` if refactoring.
 
----
+5. DOUBLE hasOwnerUnit — declared at component scope (line 183) AND inside calc() (line 196).
+   Both compute the same thing. Inner one exposed as a.hasOwnerUnit on result object.
 
-## API Pattern
+6. FLAT CASHFLOW CHART — cashFlowChartData (lines 447-456) repeats the same value
+   10 times. Known bug: does not project rent growth. Chart is misleading.
 
-No API. No HTTP calls. All logic is synchronous JavaScript in `calc()`.
+7. CONSOLE.LOGS IN PROD — lines 502 + 533 log property data to browser console.
+   Remove before any public deployment.
 
-The pattern for accessing calculated values in JSX:
-```jsx
-// Always use `a.propertyName` for current results
-{a.capRate > 0 && <Row label="Cap Rate" val={pct(a.capRate)} tip="capRate" />}
+8. NO LOCALSTORAGE TRY/CATCH — line 158-161: JSON.parse() has no try/catch.
+   Corrupted storage crashes the app on load.
 
-// Use formatters:
-$(amount)   // CAD currency, no cents: "$280,000"
-$2(amount)  // CAD currency, 2 decimals: "$1,506.50"
-pct(rate)   // 2 decimal percent: "5.25%"
-pct1(rate)  // 1 decimal percent: "5.3%"
-```
+9. FONTS IN JSX BODY — Google Fonts <link> is at line 897 inside component render.
+   Works but causes FOUT. Belongs in index.html <head>.
 
----
+10. MAINT % ON EGI — maintPct is applied to post-vacancy EGI, not gross rent (line 285).
+    Correct behavior but unusual vs industry standard.
+</gotchas>
 
-## Financial Math Pattern
+<open_bugs priority="fix_first">
+  HIGH   | cashFlowChartData flat line (lines 447-456) — misleading to clients
+  MEDIUM | var declarations in if/else (lines 237-282) — use let
+  LOW    | console.log in production (lines 502, 533) — remove
+  LOW    | localStorage no try/catch (lines 158-161) — wrap JSON.parse
+  LOW    | Dead variable hasRentals at component scope (line 184) — remove
+</open_bugs>
 
-```js
-// Mortgage payment (standard annuity)
-function mortgagePayment(prin, annRate, yrs) {
-  const r = annRate / 12, n = yrs * 12;
-  if (r === 0) return prin / n;
-  return prin * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-}
+<security>
+  CRITICAL  dompurify < 3.2.4 (via jsPDF) — XSS → npm audit fix --force (jsPDF API breaks)
+  HIGH      rollup 4.0.0-4.58.0 — path traversal → npm audit fix (safe, run this now)
+  MODERATE  esbuild ≤ 0.24.2 — dev server only, not production
+</security>
 
-// CMHC lookup
-const CMHC = [
-  { lo: 5, hi: 9.99, r: 0.04 },    // 5-9.99% down → 4% premium
-  { lo: 10, hi: 14.99, r: 0.031 }, // 10-14.99% → 3.1%
-  { lo: 15, hi: 19.99, r: 0.028 }, // 15-19.99% → 2.8%
-  { lo: 20, hi: 100, r: 0 }        // 20%+ → no CMHC
-];
-// Only applies if: priceNum <= 1500000 AND downPct < 0.20 AND (isOwner OR hasOwnerUnit)
-
-// Cap rate
-const capRate = priceNum > 0 ? noi / priceNum : 0;
-
-// Cash-on-cash
-const coc = cashIn > 0 ? cashFlow / cashIn : 0;
-
-// DSCR
-const dscr = annMtg > 0 ? noi / annMtg : 0;
-```
-
----
-
-## Error Handling Pattern
-
-No try/catch in financial logic — division-by-zero is handled inline:
-```js
-const capRate = priceNum > 0 ? noi / priceNum : 0;
-const coc = cashIn > 0 ? cashFlow / cashIn : 0;
-const dscr = annMtg > 0 ? noi / annMtg : 0;
-const grm = grossAnn > 0 ? priceNum / grossAnn : 0;
-```
-
-Load property has try/catch (line 503-537):
-```js
-try {
-  setMode(prop.mode || 'owner');
-  // ... all state setters
-} catch (error) {
-  console.error('Error loading property:', error);
-  alert('Error loading property: ' + error.message);
-}
-```
-
-localStorage init has NO try/catch — potential crash point:
-```js
-// Line 158-161 — MISSING try/catch:
-const [savedProperties, setSavedProperties] = useState(() => {
-  const saved = localStorage.getItem('dealAnalyzerProperties');
-  return saved ? JSON.parse(saved) : []; // JSON.parse can throw
-});
-```
-
----
-
-## All External Services
-
-| Service | Purpose | Env Vars | Notes |
-|---------|---------|----------|-------|
-| Google Fonts CDN | Outfit + JetBrains Mono | None | Inline `<link>` in JSX render — should move to index.html |
-| Browser localStorage | Save/load properties | None | Key: `dealAnalyzerProperties` |
-
-No APIs, no secrets, no environment variables anywhere in the codebase.
-
----
-
-## All AI/LLM Prompts Currently In Use
-
-NONE. No AI/LLM integration.
-
----
-
-## Critical Gotchas
-
-1. **The entire app is one component.** `DealAnalyzer.jsx` is 1,529 lines. There are no child components except the Charts. All state, all logic, all UI is in one place. When searching for something, search this file first — it's almost certainly there.
-
-2. **`calc()` runs 4 times per render.** The `scn` useMemo calls `calc()` three times (low, mid, high) plus the main `a` call. The `calc()` function has a 20-variable dependency array. This is intentional and correct but means debugging: changing any input triggers 4 full calc runs.
-
-3. **`var` inside if/else blocks** at lines 237-244 and 276-282. These `var` declarations are hoisted — they work but are a gotcha if you refactor those blocks. `moUtilitiesOwner` and `utilCostMo` are declared with `var` inside if/else branches.
-
-4. **Price, rate, curRent are STRINGS (not numbers).** They're stored as strings to allow smooth typing in `<input>`. Inside `calc()`, they're parsed: `parseFloat(price) || 280000`. Don't pass them as numbers to UI components expecting strings.
-
-5. **`hasOwnerUnit` is declared TWICE** — once at component scope (line 183) for render logic, and once inside `calc()` (line 196) for financial calculations. They compute the same thing but are separate. The inner one returns on the `a` object as `a.hasOwnerUnit`.
-
-6. **Google Fonts loaded inside JSX body** (line 897): `<link href="https://fonts.googleapis.com/..." />` is rendered inside the component, not in `<head>`. This works but causes a brief FOUT (Flash of Unstyled Text) and re-renders incorrectly on hot reload.
-
-7. **Maintenance % is applied to EGI (post-vacancy), not gross rent.** This means: if vacancy reduces income, maintenance budget also drops. This is technically correct (less rent = less wear) but unusual — most investors budget maintenance on gross rent.
-
-8. **cashFlowChartData is flat.** The 10-year cash flow chart shows the same value repeated 10 times. It does NOT project forward with rent increases. This is a known bug to fix.
-
-9. **PDF export is dynamically imported** — jsPDF and autotable are loaded on first click. First export has a 1-2 second delay. Subsequent exports are fast (cached).
-
-10. **No mobile CSS.** The app uses fixed pixel gaps and flex layouts that break on phones under ~768px width. Desktop/tablet only.
-
----
-
-## What This Codebase Is NOT
-
-- "There's a backend" → WRONG. Zero server, zero API calls, zero database. Pure browser app.
-- "localStorage will sync across devices" → WRONG. Data is local to the browser + device only.
-- "TypeScript is used" → WRONG. Plain JSX only. No type safety.
-- "Charts are tested" → WRONG. Zero test files exist.
-- "The roadmap features are implemented" → PARTIALLY WRONG. ROADMAP.md lists charts, save/compare, PDF as "pending" — they're actually all implemented. Roadmap is stale.
-- "The cash flow chart shows projections" → WRONG. It shows the same annual figure repeated 10 times.
-- "5% down works for investment properties in Canada" → WRONG for conventional lenders. Works with private/alt lenders. The app now shows it as "scenario analysis" with a note.
-
----
-
-## Quick Start for New Session
-
-> You are working on **Deal Analyzer** — a client-side real estate analysis tool for Hasan Sharif, REALTOR® (eXp Realty SK/AB).
->
-> **Key facts:**
-> - Stack: React 18 + Vite 5 + Recharts + jsPDF, no backend, no API
-> - Working directory: `/Users/owner/Deal-Analyzer`
-> - Entry point: `src/main.jsx` → `src/DealAnalyzer.jsx` (1,529 lines — entire app)
-> - Charts: `src/Charts.jsx` (167 lines, 5 Recharts components)
-> - DB: Browser localStorage only (`dealAnalyzerProperties` key)
-> - Auth: NONE — anonymous single-user tool
-> - Naming: camelCase state, PascalCase components, inline CSS-in-JS
-> - Critical gotcha: `calc()` runs 4x per state change; `price`/`rate`/`curRent` are strings not numbers
-> - 5 npm audit vulnerabilities: run `npm audit fix` first (safe), then evaluate `--force` for jsPDF
->
-> See `CODEBASE_AUDIT_20260226.md` for full context.
-
----
-
-## Top 5 Improvements (Ranked by Impact × Effort)
-
-| # | What to do | Why | Impact | Effort |
-|---|------------|-----|--------|--------|
-| 1 | Run `npm audit fix` + plan jsPDF upgrade | CRITICAL vuln (DOMPurify XSS) + HIGH vuln (Rollup path traversal) | HIGH | LOW/MED |
-| 2 | Fix cashFlowChartData to project 10yr with rent growth | Chart currently shows flat line — misleading to clients | HIGH | MEDIUM |
-| 3 | Add localStorage export/import (JSON backup button) | Users lose all saved properties on browser clear — no recovery | HIGH | MEDIUM |
-| 4 | Add mobile responsive CSS breakpoints | App is unusable on phones; agents use phones | HIGH | HIGH |
-| 5 | Remove console.log (lines 502, 533) + wrap localStorage in try/catch | Data exposure + crash risk on corrupted storage | MEDIUM | LOW |
+<session_start_checklist>
+When starting work on this project:
+  [ ] Run `npm audit fix` if not already done (fixes HIGH rollup vuln, safe)
+  [ ] Read DealAnalyzer.jsx around the lines you plan to change
+  [ ] Confirm your change doesn't break the calc() dependency array
+  [ ] Test the financial output makes sense after any calc() modification
+  [ ] Reference: CODEBASE_AUDIT_20260226.md for full 8-phase analysis
+</session_start_checklist>
