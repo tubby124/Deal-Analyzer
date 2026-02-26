@@ -1273,10 +1273,10 @@ export default function DealAnalyzer() {
                   </div>
                 )}
 
-                {/* Investment warning for pure investment < 20% */}
+                {/* Investment note for pure investment < 20% */}
                 {!a.hasOwnerUnit && !isOwner && downPct < 0.20 && a.showInvestmentWarning && (
-                  <div style={{ marginTop: 12, padding: "10px 12px", background: "#fb923c08", border: "1px solid #fb923c18", borderRadius: 7, fontSize: 10, color: "#fb923c" }}>
-                    ⚠️ Investment properties typically require 20% down payment. CMHC insurance is generally not available for non-owner-occupied properties.
+                  <div style={{ marginTop: 12, padding: "10px 12px", background: "#6366f108", border: "1px solid #6366f120", borderRadius: 7, fontSize: 10, color: "#8b8faa", lineHeight: 1.6 }}>
+                    <span style={{ color: "#818cf8", fontWeight: 700 }}>📊 SCENARIO ANALYSIS:</span> Conventional lenders require 20% min for pure investment. Numbers shown assume <span style={{ color: "#e8e8ec" }}>NO CMHC</span> — useful for private/alternative lender comparisons or joint ventures. Rates may be 1–2% higher with alternative lenders.
                   </div>
                 )}
               </Card>
@@ -1342,6 +1342,7 @@ export default function DealAnalyzer() {
           </div>
 
           <div style={{ marginTop: 18 }}><SL>Down Payment Comparison</SL>
+            {!isOwner && !hasOwnerUnit && <div style={{ fontSize: 9, color: "#3d4266", marginBottom: 6 }}>* Scenario analysis — conventional lenders require 20%+ for pure investment. Click any row to model it.</div>}
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
               <thead><tr style={{ borderBottom: "2px solid #151a28" }}>{["%", "Down", "CMHC", "Mortgage", "Payment", isOwner ? "Mo Cost" : "Mo CF", "Cash In"].map(h => <th key={h} style={{ padding: "7px 6px", color: "#3d4266", fontWeight: 700, textAlign: "right", fontSize: 10 }}>{h}</th>)}</tr></thead>
               <tbody>{[0.05, 0.10, 0.15, 0.20, 0.25].map(d => {
@@ -1352,7 +1353,9 @@ export default function DealAnalyzer() {
                 const pmt = mortgagePayment(tm, rateNum / 100, amYrs), ci = dn + priceNum * closePct;
                 const mc = pmt + a.moTax + a.moCondo, mcf = a.noi / 12 - pmt, act = d === downPct;
                 return (<tr key={d} onClick={() => setDownPct(d)} style={{ borderBottom: "1px solid #0e1019", background: act ? "#6366f108" : "transparent", cursor: "pointer" }}>
-                  <td style={{ padding: "7px 6px", textAlign: "right", color: act ? "#818cf8" : "#5a5e80", fontWeight: act ? 700 : 500 }}>{(d * 100).toFixed(0)}%</td>
+                  <td style={{ padding: "7px 6px", textAlign: "right", color: act ? "#818cf8" : "#5a5e80", fontWeight: act ? 700 : 500 }}>
+                    {(d * 100).toFixed(0)}%{!isOwner && !hasOwnerUnit && d < 0.20 && <span style={{ fontSize: 8, color: "#4a5072", marginLeft: 2 }}>*</span>}
+                  </td>
                   <td style={{ padding: "7px 6px", textAlign: "right", color: "#8b8faa", fontFamily: fm }}>{$(dn)}</td>
                   <td style={{ padding: "7px 6px", textAlign: "right", color: cr ? "#facc15" : "#1c2036", fontFamily: fm }}>{cr ? $(cp) : "—"}</td>
                   <td style={{ padding: "7px 6px", textAlign: "right", color: "#8b8faa", fontFamily: fm }}>{$(tm)}</td>
