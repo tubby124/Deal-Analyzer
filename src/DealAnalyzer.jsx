@@ -156,8 +156,12 @@ export default function DealAnalyzer() {
   const [utilGas, setUtilGas] = useState("");
   const [heatingType, setHeatingType] = useState("gas");
   const [savedProperties, setSavedProperties] = useState(() => {
-    const saved = localStorage.getItem('dealAnalyzerProperties');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('dealAnalyzerProperties');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -181,7 +185,6 @@ export default function DealAnalyzer() {
   const getOwnerUnit = useCallback(() => units.find(u => u.ownerOccupied), [units]);
   const getRentalUnits = useCallback(() => units.filter(u => !u.ownerOccupied), [units]);
   const hasOwnerUnit = units.some(u => u.ownerOccupied);
-  const hasRentals = units.some(u => !u.ownerOccupied);
 
   const calc = useCallback((gr) => {
     // Parse string inputs to numbers with defaults
@@ -231,16 +234,17 @@ export default function DealAnalyzer() {
     const defaultWaterOwner = propType === "detached" ? 80 : isCondo ? 60 : 70;
     let defaultGasOwner = propType === "detached" ? 150 : isCondo ? 100 : 120;
 
+    let moUtilitiesOwner;
     if (heatingType === "baseboard") {
       defaultGasOwner = 0;
       const baseboardCost = propType === "detached" ? 400 : 300;
-      var moUtilitiesOwner = (utilElectric ? Number(utilElectric) : defaultElectricOwner + baseboardCost) +
-                             (utilWater ? Number(utilWater) : defaultWaterOwner) +
-                             (utilGas ? Number(utilGas) : 0);
+      moUtilitiesOwner = (utilElectric ? Number(utilElectric) : defaultElectricOwner + baseboardCost) +
+                         (utilWater ? Number(utilWater) : defaultWaterOwner) +
+                         (utilGas ? Number(utilGas) : 0);
     } else {
-      var moUtilitiesOwner = (utilElectric ? Number(utilElectric) : defaultElectricOwner) +
-                             (utilWater ? Number(utilWater) : defaultWaterOwner) +
-                             (utilGas ? Number(utilGas) : defaultGasOwner);
+      moUtilitiesOwner = (utilElectric ? Number(utilElectric) : defaultElectricOwner) +
+                         (utilWater ? Number(utilWater) : defaultWaterOwner) +
+                         (utilGas ? Number(utilGas) : defaultGasOwner);
     }
 
     const annUtilitiesOwner = moUtilitiesOwner * 12;
@@ -267,18 +271,19 @@ export default function DealAnalyzer() {
     let defaultGas = propType === "detached" ? 150 : isCondo ? 100 : 120;
 
     // Baseboard heating multiplier (much higher costs)
+    let utilCostMo;
     if (heatingType === "baseboard") {
       defaultGas = 0; // No gas with electric baseboard
       const baseboardCost = propType === "detached" ? 400 : 300; // $300-400/mo in winter
       const moElectric = utilElectric ? Number(utilElectric) : defaultElectric + baseboardCost;
       const moWater = utilWater ? Number(utilWater) : defaultWater;
       const moGas = utilGas ? Number(utilGas) : 0;
-      var utilCostMo = moElectric + moWater + moGas;
+      utilCostMo = moElectric + moWater + moGas;
     } else {
       const moElectric = utilElectric ? Number(utilElectric) : defaultElectric;
       const moWater = utilWater ? Number(utilWater) : defaultWater;
       const moGas = utilGas ? Number(utilGas) : defaultGas;
-      var utilCostMo = moElectric + moWater + moGas;
+      utilCostMo = moElectric + moWater + moGas;
     }
 
     const utilCost = tenantUtils ? 0 : utilCostMo * 12;
@@ -447,13 +452,14 @@ export default function DealAnalyzer() {
   const cashFlowChartData = useMemo(() => {
     const data = [];
     for (let year = 1; year <= 10; year++) {
+      const projectedNoi = a.noi * Math.pow(1 + baseGr, year - 1);
       data.push({
         year,
-        cashflow: Math.round(a.cashFlow)
+        cashflow: Math.round(projectedNoi - a.annMtg)
       });
     }
     return data;
-  }, [a.cashFlow]);
+  }, [a.noi, a.annMtg, baseGr]);
 
   // Open save modal with defaults
   const openSaveModal = useCallback(() => {
@@ -499,7 +505,6 @@ export default function DealAnalyzer() {
 
   // Load saved property
   const loadProperty = useCallback((prop) => {
-    console.log('Loading property:', prop);
     try {
       setMode(prop.mode || 'owner');
       setMarket(prop.market || 'saskatoon');
@@ -530,7 +535,6 @@ export default function DealAnalyzer() {
       setMaintPct(prop.maintPct || 5);
       setGrowthOvr(prop.growthOvr || "");
       setTab("main");
-      console.log('Property loaded successfully!');
     } catch (error) {
       console.error('Error loading property:', error);
       alert('Error loading property: ' + error.message);
