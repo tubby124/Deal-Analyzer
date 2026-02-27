@@ -948,8 +948,15 @@ export default function DealAnalyzer() {
           <div style={{ display: "flex", gap: 4, marginTop: 10, flexWrap: "wrap" }}>
             {[["condo", "Condo"], ["detached", "Detached"], ["duplex", "Duplex/4plex"], ["multi", "Multi (5+)"]].map(([id, lb]) => (<Pill key={id} on={propType === id} color="#6366f1" onClick={() => { setPropType(id); if (!isOwner) { if (id === "condo") setUnits([{ type: "2bed", rent: "" }]); else if (id === "detached") setUnits([{ type: "2bed_nc", rent: "" }, { type: "garage", rent: "" }]); else setUnits([{ type: "2bed", rent: "" }, { type: "2bed", rent: "" }]); } }}>{lb}</Pill>))}
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-            <Fd l="DOWN %"><select style={ss} value={downPct} onChange={e => setDownPct(Number(e.target.value))}>{[0.05, 0.10, 0.15, 0.20, 0.25].map(d => <option key={d} value={d}>{(d * 100).toFixed(0)}%</option>)}</select></Fd>
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 10, color: "#4a5072", fontWeight: 700, letterSpacing: 0.8, marginBottom: 6 }}>DOWN PAYMENT</div>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {[0.05, 0.10, 0.15, 0.20, 0.25].map(d => (
+                <Pill key={d} on={downPct === d} color="#6366f1" onClick={() => setDownPct(d)}>{(d * 100).toFixed(0)}%</Pill>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
             <Fd l="RATE %"><input style={si} type="number" value={rate} onChange={e => setRate(e.target.value)} min="0" max="25" /></Fd>
             <Fd l="AMORT"><select style={ss} value={amYrs} onChange={e => setAmYrs(Number(e.target.value))}><option value={25}>25yr</option><option value={30}>30yr</option></select></Fd>
             <Fd l="CLOSING"><select style={ss} value={closePct} onChange={e => setClosePct(Number(e.target.value))}><option value={0.01}>1%</option><option value={0.015}>1.5%</option><option value={0.02}>2%</option><option value={0.03}>3%</option><option value={0.05}>5%</option></select></Fd>
