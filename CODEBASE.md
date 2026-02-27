@@ -96,7 +96,7 @@ Charts get memoized data arrays
 | `mode` | string | `"owner"` | "owner" (buy to live) or "investor" |
 | `propType` | string | `"condo"` | condo / detached / duplex / multi |
 | `price` | string | `"280000"` | Purchase price (string for input control) |
-| `downPct` | number | `0.20` | Down payment percentage (0.05-0.25) |
+| `downPct` | number | `0.20` | Down payment % (0.05–0.25) — controlled by **pill buttons**, not a select |
 | `rate` | string | `"3.8"` | Mortgage interest rate % |
 | `amYrs` | number | `25` | Amortization years (25 or 30) |
 | `closePct` | number | `0.015` | Closing cost percentage |
@@ -326,10 +326,11 @@ These real-world values should be used when updating defaults:
 ## Known Issues / Gotchas
 
 1. **String vs Number inputs:** `price`, `rate`, `curRent` etc are stored as strings to allow smooth typing. Parsed to numbers inside `calc()` with fallbacks.
-2. **`var` in calc():** Some utility calculations use `var` instead of `let/const` due to block scoping within if/else. Works but should be refactored.
-3. **Chunk size warning:** Build shows a warning about large chunks (598KB). Consider code-splitting jsPDF/html2canvas with dynamic imports if this becomes a problem.
+2. **DOWN PAYMENT is pill buttons:** `downPct` is set via clickable Pill components (5% 10% 15% 20% 25%), NOT a `<select>`. Same pattern as property type. Do not revert to dropdown.
+3. **Chunk size warning:** Build shows a warning about large chunks (598KB). jsPDF is already dynamically imported; further splitting would require component refactoring.
 4. **No mobile optimization:** Layout uses CSS grid/flex with fixed pixel widths. Works on tablet but narrow phones may need responsive breakpoints.
 5. **localStorage limits:** Browser localStorage is ~5-10MB. Hundreds of saved properties could theoretically hit this limit since each saves a full results snapshot.
+6. **Security:** dompurify < 3.2.4 (via jsPDF) — XSS vuln. Fix requires `npm audit fix --force` which installs jspdf@4.2.0 (breaking API change). Accepted risk until jsPDF is upgraded.
 
 ---
 

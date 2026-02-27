@@ -5,12 +5,12 @@ You are an expert React/JavaScript developer and Canadian real estate domain spe
 <project>
 - App: Client-side-only React SPA. Zero backend. Zero API calls. Zero env vars.
 - Working dir: /Users/owner/Deal-Analyzer
-- Entry: src/main.jsx → src/DealAnalyzer.jsx (1,529 lines — entire app in one file)
+- Entry: src/main.jsx → src/DealAnalyzer.jsx (~1,540 lines — entire app in one file)
 - Charts: src/Charts.jsx (167 lines, 5 Recharts components)
 - Storage: Browser localStorage only (key: "dealAnalyzerProperties")
 - Build: `npm run dev` (port 5173) | `npm run build` → /dist/
 - Stack: React 18 + Vite 5 + Recharts + jsPDF (dynamic import) + localStorage
-- Audit: 5 npm vulnerabilities — run `npm audit fix` before new features
+- Audit: 3 npm vulnerabilities remain (all require breaking --force to fix — see security section)
 </project>
 
 <architecture>
@@ -18,19 +18,19 @@ Single component tree — DealAnalyzer.jsx contains ALL state, logic, and UI:
 
   MARKETS (const, lines 4-37) — Saskatoon + Calgary config: taxRate, vac, growth{low/mid/high}, rents, condoFees, hoods[]
   22 useState hooks (lines 136-166)
-  calc(gr) → useCallback (lines 186-409) — THE financial engine, returns object `a` with ~40 props
+  calc(gr) → useCallback (~lines 186-413) — THE financial engine, returns object `a` with ~40 props
   a = useMemo(() => calc(baseGr))      — main result, triggers on any input change
   scn = useMemo({low, mid, high})      — 3 growth scenarios; calc() runs 4x total per render
   Charts receive memoized data arrays
   4 tabs: main / projection / areas / saved
-  Save modal + PDF export (dynamic import jsPDF, lines 540-893)
+  Save modal + PDF export (dynamic import jsPDF)
 
-Key line ranges:
-  1-37    MARKETS config         186-409  calc() engine
-  39-63   Math helpers           411-456  useMemo results + chart data
-  65-82   TIPS tooltip dict      458-538  save/delete/load property
-  84-134  UI micro-components    540-893  PDF export (3-page branded)
-  136-167 State vars             895-1529 JSX render (tabs + modal)
+Key line ranges (approximate — always verify with Grep before editing):
+  1-37    MARKETS config         ~186-413  calc() engine
+  39-63   Math helpers           ~415-461  useMemo results + chart data
+  65-82   TIPS tooltip dict      ~462-544  save/delete/load property
+  84-134  UI micro-components    ~546-900  PDF export (3-page branded)
+  136-167 State vars             ~900+     JSX render (tabs + modal)
 </architecture>
 
 <domain>
@@ -40,7 +40,7 @@ Key terms:
   mode        "owner" (buy to live in) | "investor" (investment/hybrid)
   isOwner     mode === "owner" — branches all logic throughout app
   hasOwnerUnit  one unit[] flagged ownerOccupied: true → hybrid investor + CMHC benefit
-  downPct     decimal: 0.05 = 5%, 0.20 = 20% — stored as number
+  downPct     decimal: 0.05 = 5%, 0.20 = 20% — stored as number; UI is PILL BUTTONS not a select
   price/rate/curRent  stored as STRINGS for smooth typing → parsed inside calc()
   mk          MARKETS[market] shorthand — current market config
   egi         grossAnn * (1 - mk.vac) — Effective Gross Income after vacancy
@@ -56,7 +56,7 @@ Key terms:
 CMHC rules (Canadian law, Dec 2024 update):
   Only applies if: priceNum ≤ 1,500,000 AND downPct < 0.20 AND (isOwner OR hasOwnerUnit)
   Tiers: 5-9.99%→4% | 10-14.99%→3.1% | 15-19.99%→2.8% | 20%+→0%
-  Pure investor <20% down: no CMHC, shows "SCENARIO ANALYSIS" educational note
+  Pure investor <20% down: no CMHC, shows purple "SCENARIO ANALYSIS" note (not a warning)
 
 Formatters (module-level functions):
   $(n)   CAD no cents "$280,000"
@@ -69,17 +69,17 @@ Formatters (module-level functions):
 BEFORE EDITING:
   1. Read the file — always. Never edit from memory.
   2. Search for the exact code pattern before changing it.
-  3. Check if the change affects calc() dependency array (line 409).
+  3. Check if the change affects calc() dependency array (~line 413).
   4. Preserve inline CSS-in-JS pattern — no class names, no CSS files.
   5. Keep existing style constants: si (input), ss (select), ff (font), fm (mono).
 
 WHEN ADDING A NEW INPUT FIELD (the golden path):
   1. useState at lines 136-166
-  2. Use inside calc() + add to dependency array (line 409)
+  2. Use inside calc() + add to dependency array
   3. Add UI in appropriate mode-conditional section
-  4. Add to saveProperty data object (lines 468-485)
-  5. Add to loadProperty with fallback (lines 501-538)
-  6. Add to PDF export if visible (lines 540-893)
+  4. Add to saveProperty data object
+  5. Add to loadProperty with fallback
+  6. Add to PDF export if visible
 
 WHEN ADDING A MARKET:
   Copy saskatoon structure, add to MARKETS object (lines 4-37).
@@ -91,6 +91,7 @@ DO NOT:
   - Add CSS class names — inline style objects only
   - Create new files unless absolutely necessary — everything lives in DealAnalyzer.jsx
   - Guess at calculations — the financial math is Canadian-standard; verify before changing
+  - Replace DOWN PAYMENT pills with a <select> — it was changed to pills intentionally
 </rules>
 
 <gotchas>
@@ -102,45 +103,41 @@ DO NOT:
 3. CALC RUNS 4X — calc() executes 4 times per render (main + 3 scenarios).
    This is intentional. Don't add expensive logic without profiling.
 
-4. VAR HOISTING BUG — `var moUtilitiesOwner` and `var utilCostMo` declared inside
-   if/else blocks (lines 237-282). Works due to hoisting. Use `let` if refactoring.
+4. DOUBLE hasOwnerUnit — declared at component scope (~line 187) AND inside calc() (~line 199).
+   Both compute the same thing. Inner one is exposed as a.hasOwnerUnit on result object.
 
-5. DOUBLE hasOwnerUnit — declared at component scope (line 183) AND inside calc() (line 196).
-   Both compute the same thing. Inner one exposed as a.hasOwnerUnit on result object.
+5. DOWN PAYMENT IS PILLS — downPct is set via Pill buttons (5% 10% 15% 20% 25%), NOT a <select>.
+   Same visual pattern as property type selector. Do not revert to dropdown.
 
-6. FLAT CASHFLOW CHART — cashFlowChartData (lines 447-456) repeats the same value
-   10 times. Known bug: does not project rent growth. Chart is misleading.
+6. FONTS IN JSX BODY — Google Fonts <link> is inside the component render (~line 910).
+   Works but causes FOUT. Belongs in index.html <head> (low priority, known).
 
-7. CONSOLE.LOGS IN PROD — lines 502 + 533 log property data to browser console.
-   Remove before any public deployment.
-
-8. NO LOCALSTORAGE TRY/CATCH — line 158-161: JSON.parse() has no try/catch.
-   Corrupted storage crashes the app on load.
-
-9. FONTS IN JSX BODY — Google Fonts <link> is at line 897 inside component render.
-   Works but causes FOUT. Belongs in index.html <head>.
-
-10. MAINT % ON EGI — maintPct is applied to post-vacancy EGI, not gross rent (line 285).
-    Correct behavior but unusual vs industry standard.
+7. MAINT % ON EGI — maintPct is applied to post-vacancy EGI, not gross rent.
+   Correct for this app but unusual vs industry standard.
 </gotchas>
 
 <open_bugs priority="fix_first">
-  HIGH   | cashFlowChartData flat line (lines 447-456) — misleading to clients
-  MEDIUM | var declarations in if/else (lines 237-282) — use let
-  LOW    | console.log in production (lines 502, 533) — remove
-  LOW    | localStorage no try/catch (lines 158-161) — wrap JSON.parse
-  LOW    | Dead variable hasRentals at component scope (line 184) — remove
+  All audit-identified bugs resolved Feb 26 2026:
+  ✓ localStorage JSON.parse now has try/catch
+  ✓ console.log statements removed from loadProperty
+  ✓ Dead hasRentals variable at component scope removed
+  ✓ var → let for moUtilitiesOwner and utilCostMo
+  ✓ cashFlowChartData now projects NOI growth (was flat line)
+  ✓ DOWN PAYMENT converted from hidden dropdown to visible pill buttons
+
+  Remaining security (all require --force breaking changes):
+  CRITICAL  dompurify < 3.2.4 (via jsPDF) — XSS → fix breaks jsPDF API
+  MODERATE  esbuild ≤ 0.24.2 — dev server only, not production
 </open_bugs>
 
 <security>
-  CRITICAL  dompurify < 3.2.4 (via jsPDF) — XSS → npm audit fix --force (jsPDF API breaks)
-  HIGH      rollup 4.0.0-4.58.0 — path traversal → npm audit fix (safe, run this now)
-  MODERATE  esbuild ≤ 0.24.2 — dev server only, not production
+  FIXED     rollup path traversal — patched Feb 26 2026 via npm audit fix (safe)
+  CRITICAL  dompurify < 3.2.4 (via jsPDF) — XSS. npm audit fix --force installs jspdf@4.2.0 (breaking)
+  MODERATE  esbuild ≤ 0.24.2 — dev server only. npm audit fix --force installs vite@7.3.1 (breaking)
 </security>
 
 <session_start_checklist>
 When starting work on this project:
-  [ ] Run `npm audit fix` if not already done (fixes HIGH rollup vuln, safe)
   [ ] Read DealAnalyzer.jsx around the lines you plan to change
   [ ] Confirm your change doesn't break the calc() dependency array
   [ ] Test the financial output makes sense after any calc() modification
