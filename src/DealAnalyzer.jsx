@@ -567,7 +567,7 @@ export default function DealAnalyzer() {
 
   function handleMarketChange(val) { setMarket(val); setTaxOvr(""); setCondoOvr(""); }
 
-  const downOpts = isOwner ? [0.05, 0.10, 0.15, 0.20, 0.25] : [0.20, 0.25, 0.30, 0.35];
+  const downOpts = isOwner ? [0.05, 0.10, 0.15, 0.20, 0.25] : [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -691,7 +691,7 @@ export default function DealAnalyzer() {
             <button key={id} onClick={() => {
               setMode(id);
               if (id === "owner")    { setUnits([]); if (downPct > 0.25) setDownPct(0.20); }
-              if (id === "investor") { if (downPct < 0.20) setDownPct(0.20); if (units.length === 0) setUnits([{ type: isCondo ? "2bed" : "2bed_nc", rent: "" }]); }
+              if (id === "investor") { if (units.length === 0) setUnits([{ type: isCondo ? "2bed" : "2bed_nc", rent: "" }]); }
             }} style={{
               padding: "10px 22px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: ff,
               background: mode === id ? C.brand : "transparent",
