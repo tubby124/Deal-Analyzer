@@ -357,7 +357,7 @@ export default function MLISelect() {
             </select>
           </Fd>
           <Fd l="PURCHASE PRICE">
-            <input style={si} type="number" inputMode="decimal" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} onWheel={e => e.target.blur()} step={25000} />
+            <input style={si} type="text" inputMode="decimal" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} step={25000} />
           </Fd>
         </div>
 
@@ -373,11 +373,11 @@ export default function MLISelect() {
               </select>
             </Fd>
             <Fd l="COUNT">
-              <input style={{ ...si, width: 72, textAlign: "center" }} type="number" inputMode="decimal" min={1} max={99}
+              <input style={{ ...si, width: 72, textAlign: "center" }} type="text" inputMode="decimal" min={1} max={99}
                 value={u.count} onChange={e => updateUnitMix(i, "count", Math.max(1, parseInt(e.target.value) || 1))} />
             </Fd>
             <Fd l={"RENT/MO (blank = " + fmt$(mk.rents[u.type] || 0) + " market default)"}>
-              <input style={{ ...si, minWidth: 140 }} type="number" inputMode="decimal" placeholder={mk.rents[u.type] || ""}
+              <input style={{ ...si, minWidth: 140 }} type="text" inputMode="decimal" placeholder={mk.rents[u.type] || ""}
                 value={u.rent} onChange={e => updateUnitMix(i, "rent", e.target.value)} step={50} />
             </Fd>
             {unitMix.length > 1 && (
@@ -576,7 +576,7 @@ export default function MLISelect() {
         <SL>C — Financing</SL>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
           <Fd l="INTEREST RATE %">
-            <input style={si} type="number" inputMode="decimal" value={rateStr} onChange={e => setRateStr(e.target.value)} step={0.05} />
+            <input style={si} type="text" inputMode="decimal" value={rateStr} onChange={e => setRateStr(e.target.value)} step={0.05} />
           </Fd>
           <Fd l="MORTGAGE TERM">
             <select style={ss} value={termYrs} onChange={e => setTermYrs(Number(e.target.value))}>
@@ -585,11 +585,11 @@ export default function MLISelect() {
             </select>
           </Fd>
           <Fd l={"AMORTIZATION YRS (tier default: " + (tier ? tier.amort : "N/A") + " yr)"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={tier ? tier.amort : "25"}
+            <input style={si} type="text" inputMode="decimal" placeholder={tier ? tier.amort : "25"}
               value={amOvr} onChange={e => setAmOvr(e.target.value)} step={5} />
           </Fd>
           <Fd l={"LTV OVERRIDE % (tier default: " + (tier ? pct1(isNew ? tier.ltvNew : tier.ltvExisting) : "N/A") + ")"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={tier ? ((isNew ? tier.ltvNew : tier.ltvExisting) * 100).toFixed(0) : ""}
+            <input style={si} type="text" inputMode="decimal" placeholder={tier ? ((isNew ? tier.ltvNew : tier.ltvExisting) * 100).toFixed(0) : ""}
               value={ltvOvr} onChange={e => setLtvOvr(e.target.value)} step={1} />
           </Fd>
         </div>
@@ -629,7 +629,7 @@ export default function MLISelect() {
 
         <div style={{ display: "flex", gap: 8, margin: "10px 0" }}>
           <Fd l={"VACANCY % (lender floor: " + (mk.vacRate * 100).toFixed(0) + "% — use this even if actual is lower)"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={(mk.vacRate * 100).toFixed(0)} value={vacOvr}
+            <input style={si} type="text" inputMode="decimal" placeholder={(mk.vacRate * 100).toFixed(0)} value={vacOvr}
               onChange={e => setVacOvr(e.target.value)} step={0.5} />
           </Fd>
         </div>
@@ -644,23 +644,23 @@ export default function MLISelect() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
           <Fd l={"PROPERTY TAX (default: " + fmt$(Math.round(purchasePrice * mk.taxRate)) + "/yr)"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={Math.round(purchasePrice * mk.taxRate)}
+            <input style={si} type="text" inputMode="decimal" placeholder={Math.round(purchasePrice * mk.taxRate)}
               value={taxOvr} onChange={e => setTaxOvr(e.target.value)} step={500} />
           </Fd>
           <Fd l={"PROPERTY MGMT % OF EGI (default: " + (mk.mgmtPct * 100).toFixed(0) + "%)"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={(mk.mgmtPct * 100).toFixed(0)}
+            <input style={si} type="text" inputMode="decimal" placeholder={(mk.mgmtPct * 100).toFixed(0)}
               value={mgmtOvr} onChange={e => setMgmtOvr(e.target.value)} step={0.5} />
           </Fd>
           <Fd l={"INSURANCE $/yr (default: " + fmt$(mk.insurancePerUnit) + "/unit = " + fmt$(mk.insurancePerUnit * totalUnitCount) + " total)"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={mk.insurancePerUnit * totalUnitCount}
+            <input style={si} type="text" inputMode="decimal" placeholder={mk.insurancePerUnit * totalUnitCount}
               value={insuranceOvr} onChange={e => setInsuranceOvr(e.target.value)} step={200} />
           </Fd>
           <Fd l={"MAINTENANCE + RESERVE $/yr (default: " + fmt$(mk.maintPerUnit) + "/unit = " + fmt$(mk.maintPerUnit * totalUnitCount) + " total)"}>
-            <input style={si} type="number" inputMode="decimal" placeholder={mk.maintPerUnit * totalUnitCount}
+            <input style={si} type="text" inputMode="decimal" placeholder={mk.maintPerUnit * totalUnitCount}
               value={maintOvr} onChange={e => setMaintOvr(e.target.value)} step={500} />
           </Fd>
           <Fd l="UTILITIES $/yr (if landlord pays — else $0)">
-            <input style={si} type="number" inputMode="decimal" placeholder="0" value={utilitiesOvr}
+            <input style={si} type="text" inputMode="decimal" placeholder="0" value={utilitiesOvr}
               onChange={e => setUtilitiesOvr(e.target.value)} step={500} />
           </Fd>
         </div>

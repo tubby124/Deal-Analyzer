@@ -747,11 +747,11 @@ export default function DealAnalyzer() {
               </select>
             </Fd>
             <Fd l="PURCHASE PRICE">
-              <input style={si} type="number" inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} onWheel={e => e.target.blur()} step={5000} />
+              <input style={si} type="text" inputMode="decimal" value={price} onChange={e => setPrice(e.target.value)} step={5000} />
             </Fd>
             {isOwner && (
               <Fd l="YOUR CURRENT RENT">
-                <input style={si} type="number" inputMode="decimal" value={curRent} onChange={e => setCurRent(e.target.value)} onWheel={e => e.target.blur()} step={50} />
+                <input style={si} type="text" inputMode="decimal" value={curRent} onChange={e => setCurRent(e.target.value)} step={50} />
               </Fd>
             )}
           </div>
@@ -778,7 +778,7 @@ export default function DealAnalyzer() {
               </select>
             </Fd>
             <Fd l="INTEREST RATE %">
-              <input style={si} type="number" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} onWheel={e => e.target.blur()} step={0.05} />
+              <input style={si} type="text" inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} step={0.05} />
             </Fd>
             <Fd l="AMORTIZATION">
               <select style={ss} value={amYrs} onChange={e => setAmYrs(Number(e.target.value))}>
@@ -798,11 +798,11 @@ export default function DealAnalyzer() {
           {/* Tax / condo / expenses */}
           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
             <Fd l={"PROPERTY TAX / YR  (default " + fmt$((parseFloat(price)||0) * mk.taxRate) + ")"}>
-              <input style={si} type="number" inputMode="decimal" placeholder={Math.round((parseFloat(price)||0) * mk.taxRate)} value={taxOvr} onChange={e => setTaxOvr(e.target.value)} />
+              <input style={si} type="text" inputMode="decimal" placeholder={Math.round((parseFloat(price)||0) * mk.taxRate)} value={taxOvr} onChange={e => setTaxOvr(e.target.value)} />
             </Fd>
             {isCondo && (
               <Fd l={"CONDO FEES / MO  (default " + fmt$(mk.condoFees) + ")"}>
-                <input style={si} type="number" inputMode="decimal" placeholder={mk.condoFees} value={condoOvr} onChange={e => setCondoOvr(e.target.value)} />
+                <input style={si} type="text" inputMode="decimal" placeholder={mk.condoFees} value={condoOvr} onChange={e => setCondoOvr(e.target.value)} />
               </Fd>
             )}
             {!isOwner && (<>
@@ -843,10 +843,10 @@ export default function DealAnalyzer() {
                   {isFirstTime ? (<>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
                       <Fd l="FHSA BALANCE ($8K/yr, $40K lifetime)">
-                        <input style={si} type="number" inputMode="decimal" value={fhsaBalance} onChange={e => setFhsaBalance(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                        <input style={si} type="text" inputMode="decimal" value={fhsaBalance} onChange={e => setFhsaBalance(e.target.value)} placeholder="0" />
                       </Fd>
                       <Fd l="HBP RRSP WITHDRAWAL (max $60K/person)">
-                        <input style={si} type="number" inputMode="decimal" value={hbpAmount} onChange={e => setHbpAmount(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                        <input style={si} type="text" inputMode="decimal" value={hbpAmount} onChange={e => setHbpAmount(e.target.value)} placeholder="0" />
                       </Fd>
                     </div>
                     {(() => {
@@ -906,7 +906,7 @@ export default function DealAnalyzer() {
                   </select>
                 </Fd>
                 <Fd l={"RENT  (market: " + fmt$(mk.rents[u.type] || 0) + "/mo)"}>
-                  <input style={si} type="number" inputMode="decimal" placeholder={mk.rents[u.type] || 0} value={u.rent}
+                  <input style={si} type="text" inputMode="decimal" placeholder={mk.rents[u.type] || 0} value={u.rent}
                     onChange={e => { const nu = [...units]; nu[i] = { ...nu[i], rent: e.target.value }; setUnits(nu); }} />
                 </Fd>
                 <button onClick={() => setUnits(units.filter((_, j) => j !== i))} style={{
@@ -924,10 +924,10 @@ export default function DealAnalyzer() {
             )}
             <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
               <Fd l="RENOVATION BUDGET ($)">
-                <input style={si} type="number" inputMode="decimal" value={renovCost} onChange={e => setRenovCost(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                <input style={si} type="text" inputMode="decimal" value={renovCost} onChange={e => setRenovCost(e.target.value)} placeholder="0" />
               </Fd>
               <Fd l="RENEWAL RATE SCENARIO (%)">
-                <input style={si} type="number" inputMode="decimal" value={renewRateScen} onChange={e => setRenewRateScen(e.target.value)} onWheel={e => e.target.blur()} step={0.25} />
+                <input style={si} type="text" inputMode="decimal" value={renewRateScen} onChange={e => setRenewRateScen(e.target.value)} step={0.25} />
               </Fd>
             </div>
           </>)}
@@ -1097,7 +1097,7 @@ export default function DealAnalyzer() {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 10, color: C.textMuted }}>Custom % / yr:</span>
                 <input style={{ ...si, width: 80, padding: "6px 10px", fontSize: 12, textAlign: "center" }}
-                  type="number" inputMode="decimal" step={0.5} placeholder="auto" value={growthOvr}
+                  type="text" inputMode="decimal" step={0.5} placeholder="auto" value={growthOvr}
                   onChange={e => setGrowthOvr(e.target.value)} />
                 {growthOvr && (
                   <button onClick={() => setGrowthOvr("")} style={{
@@ -1240,29 +1240,29 @@ export default function DealAnalyzer() {
             <SL>Sale Details</SL>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Fd l="EXPECTED SALE PRICE (blank = purchase price)">
-                <input style={si} type="number" inputMode="decimal" value={sellPrice} onChange={e => setSellPrice(e.target.value)} onWheel={e => e.target.blur()} placeholder={price || "0"} />
+                <input style={si} type="text" inputMode="decimal" value={sellPrice} onChange={e => setSellPrice(e.target.value)} placeholder={price || "0"} />
               </Fd>
               <Fd l="ORIGINAL PURCHASE PRICE">
-                <input style={si} type="number" inputMode="decimal" value={origPurchPrice} onChange={e => setOrigPurchPrice(e.target.value)} onWheel={e => e.target.blur()} placeholder={price || "0"} />
+                <input style={si} type="text" inputMode="decimal" value={origPurchPrice} onChange={e => setOrigPurchPrice(e.target.value)} placeholder={price || "0"} />
               </Fd>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Fd l="YEAR PURCHASED">
-                <input style={si} type="number" inputMode="decimal" value={purchaseYear} onChange={e => setPurchaseYear(e.target.value)} onWheel={e => e.target.blur()} />
+                <input style={si} type="text" inputMode="decimal" value={purchaseYear} onChange={e => setPurchaseYear(e.target.value)} />
               </Fd>
               <Fd l="CAPITAL IMPROVEMENTS ($)">
-                <input style={si} type="number" inputMode="decimal" value={capImprov} onChange={e => setCapImprov(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                <input style={si} type="text" inputMode="decimal" value={capImprov} onChange={e => setCapImprov(e.target.value)} placeholder="0" />
               </Fd>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Fd l="CCA CLAIMED (investor properties)">
-                <input style={si} type="number" inputMode="decimal" value={ccaClaimed} onChange={e => setCcaClaimed(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                <input style={si} type="text" inputMode="decimal" value={ccaClaimed} onChange={e => setCcaClaimed(e.target.value)} placeholder="0" />
               </Fd>
               <Fd l="OTHER INCOME THIS YEAR ($)">
-                <input style={si} type="number" inputMode="decimal" value={otherIncome} onChange={e => setOtherIncome(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                <input style={si} type="text" inputMode="decimal" value={otherIncome} onChange={e => setOtherIncome(e.target.value)} placeholder="0" />
               </Fd>
               <Fd l="PREPAYMENT PENALTY ($)">
-                <input style={si} type="number" inputMode="decimal" value={mortgPenalty} onChange={e => setMortgPenalty(e.target.value)} onWheel={e => e.target.blur()} placeholder="0" />
+                <input style={si} type="text" inputMode="decimal" value={mortgPenalty} onChange={e => setMortgPenalty(e.target.value)} placeholder="0" />
               </Fd>
             </div>
           </Card>
