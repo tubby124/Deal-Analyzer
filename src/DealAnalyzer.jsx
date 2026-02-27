@@ -306,6 +306,15 @@ function Divider() {
   return <div style={{ borderTop: "1px solid " + C.borderSub, margin: "10px 0" }} />;
 }
 
+function Fd({ l, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+      <label style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, letterSpacing: 0.8 }}>{l}</label>
+      {children}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DealAnalyzer() {
   const [address,    setAddress]    = useState("");
@@ -517,13 +526,6 @@ export default function DealAnalyzer() {
         { l: "Mo CF",    v: fmt$(a.moCF),    c: a.moCF >= 0 ? C.pos : C.neg },
         { l: "Score",    v: a.score + "/100",c: a.vc     },
       ];
-
-  const Fd = ({ l, children }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-      <label style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, letterSpacing: 0.8 }}>{l}</label>
-      {children}
-    </div>
-  );
 
   async function handlePDFLoad(file) {
     setPdfLoading(true);
